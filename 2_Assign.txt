@@ -1,0 +1,54 @@
+-Secret file Yaml--------------------------------------
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+stringData:
+  myKey: Kub3rn3t3sRul3s!
+
+-Pod File in Yaml--------------------------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: candy-service-config-pod
+spec:
+  serviceAccountName: candy-svc
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 3000
+  containers:
+  - name: myapp-container
+    image: linuxacademycontent/candy-service:1
+    command: ['sh', '-c', "echo $(cat /etc/candy-service/candy) && sleep 3600"]
+    volumeMounts:
+      - name: config-volume
+        mountPath: /etc/candy-service
+  volumes:
+    - name: config-volume
+      configMap:
+        name: candy-service-config
+  resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+  env:
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: my-secret
+          key: myKey
+		
+		
+-CandyServiceConfig File---------------------------------------
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+   name: candy-service-config
+data:
+   candy: myValue
